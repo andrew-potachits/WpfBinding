@@ -14,7 +14,7 @@ namespace WpfBinding
     /// Interaction logic for Preview2D.xaml
     /// </summary>
     //[ContentProperty("Data")]
-    public partial class Preview2D : UserControl
+    public partial class Preview2D : UserControl, IScaleProvider
     {
         public IEnumerable<LineDef> Data
         {
@@ -30,6 +30,7 @@ namespace WpfBinding
 
         //private DependencyObject _selectedObject;
         private Point _oldPosition;
+        private IValueConverter _scaleConverter;
 
         private static void OnPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -60,27 +61,17 @@ namespace WpfBinding
                 BindData(line, Line.Y1Property, "From.Y");
                 BindData(line, Line.X2Property, "To.X");
                 BindData(line, Line.Y2Property, "To.Y");
-                BindStyle(line);
                 line.Style = Resources[lineDef.Selected ? "Selected" : "Unselected"] as Style;
                 
                 Canvas.Children.Add(line);
             }
         }
 
-        private void BindStyle(Line line)
-        {
-            Binding styleBuinding = new Binding();
-            styleBuinding.Mode = BindingMode.OneWay;
-            styleBuinding.Converter = _styleConverter;
-            
-            BindingOperations.SetBinding(line, Line.StyleProperty, styleBuinding);
-        }
-
         private void BindData(DependencyObject target, DependencyProperty property, string path)
         {
             var binding = new Binding(path);
             binding.Mode = BindingMode.TwoWay;
-
+            binding.Converter = _scaleConverter;
             BindingOperations.SetBinding(target, property, binding);
         }
 
@@ -94,6 +85,7 @@ namespace WpfBinding
         {
             _styleConverter = new LineStyleConverter(Resources, "Selected", "Unselected");
             InitializeComponent();
+            _scaleConverter = new ScaleConverter(this);
         }
 
         private void Canvas_MouseMove(object sender, MouseEventArgs e)
@@ -171,5 +163,8 @@ namespace WpfBinding
                 return;
             Mouse.Capture(null);
         }
+
+        public double XScale { get; set; }
+        public double YScale { get; set; }
     }
 }
