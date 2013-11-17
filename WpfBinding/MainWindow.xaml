@@ -3,6 +3,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:WpfBinding" x:Class="WpfBinding.MainWindow"
         Title="MainWindow" Height="350" Width="525" Loaded="Window_Loaded">
+    <Window.Resources>
+        <Style x:Key="LineStyle" TargetType="Line">
+            <Setter Property="Stroke" Value="Black"/>
+            <Setter Property="StrokeThickness" Value="1.5"/>
+        </Style>
+        <Style x:Key="SelectedLine" TargetType="Line">
+            <Setter Property="Stroke" Value="Red"/>
+            <Setter Property="StrokeThickness" Value="2.5"/>
+        </Style>
+    </Window.Resources>
     
     <Grid>
         <Grid.ColumnDefinitions>
@@ -47,7 +57,9 @@
             </StackPanel>
         </Grid>
 
-        <local:Preview2D Grid.Column="0" Data="{Binding Model, Mode=OneWay}"/>
+        <local:Preview2D Grid.Column="0" Data="{Binding Model, Mode=OneWay}"
+                         LineStyle="{StaticResource ResourceKey=LineStyle}"
+                         SelectedLineStyle="{StaticResource ResourceKey=SelectedLine}"/>
 
     </Grid>
 </Window>

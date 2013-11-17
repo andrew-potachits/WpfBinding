@@ -29,6 +29,31 @@ namespace WpfBinding
         private Point _oldPosition;
         private readonly CoordinatesHelper _coordinatesHelper = new CoordinatesHelper();
 
+
+        public Style LineStyle
+        {
+            get { return (Style)GetValue(LineStyleProperty); }
+            set { SetValue(LineStyleProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for LineStyle.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty LineStyleProperty =
+            DependencyProperty.Register("LineStyle", typeof(Style), typeof(Preview2D), new PropertyMetadata(null));
+
+
+
+
+        public Style SelectedLineStyle
+        {
+            get { return (Style)GetValue(SelectedLineStyleProperty); }
+            set { SetValue(SelectedLineStyleProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SelectedLineStyle.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SelectedLineStyleProperty =
+            DependencyProperty.Register("SelectedLineStyle", typeof(Style), typeof(Preview2D), new PropertyMetadata(null));
+
+        
         private static void OnPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var target = d as Preview2D;
@@ -55,9 +80,8 @@ namespace WpfBinding
             {
                 var line = new Line
                                {
-                                   StrokeThickness = 2,
                                    DataContext = lineDef,
-                                   Stroke = Brushes.Black,
+                                   Style = LineStyle,
                                    IsHitTestVisible = (lineDef.DragType != DragTypes.None),
                                };
                 BindData(line, Line.X1Property, "From.X", _coordinatesHelper.HorizontalConverter);
@@ -65,6 +89,7 @@ namespace WpfBinding
                 BindData(line, Line.X2Property, "To.X", _coordinatesHelper.HorizontalConverter);
                 BindData(line, Line.Y2Property, "To.Y", _coordinatesHelper.VerticalConverter);
 
+                
                 Canvas.Children.Add(line);
             }
         }
@@ -166,11 +191,6 @@ namespace WpfBinding
             return new Vector(0, 0);
         }
 
-        private void Highlight(DependencyObject selectedObject, bool highlight)
-        {
-            selectedObject.SetValue(Line.StrokeProperty, highlight? Brushes.Yellow : Brushes.Black);
-        }
-
         private void CanvasMouseDown(object sender, MouseButtonEventArgs e)
         {
             var hitTestResult = VisualTreeHelper.HitTest(Canvas, e.GetPosition(Canvas));
@@ -217,6 +237,7 @@ namespace WpfBinding
         private void CanvasSizeChanged(object sender, SizeChangedEventArgs e)
         {
             CalculateScalingFactor();
+            // force updating the content
             PopulateChildren();
         }
 
