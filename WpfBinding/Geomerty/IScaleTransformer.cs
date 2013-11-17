@@ -30,6 +30,8 @@ namespace WpfBinding.Geomerty
         /// </summary>
         /// <param name="value">The value to untransform.</param>
         /// <returns>The result of opposite transformation</returns>
-        double Unstransform(double value);
+        double Untransform(double value);
+
+        double Unscale(double value);
     }
 }

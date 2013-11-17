@@ -15,9 +15,14 @@ namespace WpfBinding.Geomerty
             return Origin + value*Scale;
         }
 
-        public double Unstransform(double value)
+        public double Untransform(double value)
         {
-            return (value - Origin) / Scale;
+            return Unscale(value - Origin);
+        }
+
+        public double Unscale(double value)
+        {
+            return value/Scale;
         }
     }
 }

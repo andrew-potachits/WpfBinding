@@ -2,7 +2,6 @@
 using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -15,7 +14,7 @@ namespace WpfBinding
     /// Interaction logic for Preview2D.xaml
     /// </summary>
     //[ContentProperty("Data")]
-    public partial class Preview2D : UserControl
+    public partial class Preview2D
     {
         public IEnumerable<LineBase> Data
         {
@@ -59,7 +58,7 @@ namespace WpfBinding
                                    StrokeThickness = 2,
                                    DataContext = lineDef,
                                    Stroke = Brushes.Black,
-                                   //LayoutTransform = _coordinatesHelper.Transform
+                                   IsHitTestVisible = (lineDef.DragType != DragTypes.None),
                                };
                 BindData(line, Line.X1Property, "From.X", _coordinatesHelper.HorizontalConverter);
                 BindData(line, Line.Y1Property, "From.Y", _coordinatesHelper.VerticalConverter);
@@ -91,7 +90,7 @@ namespace WpfBinding
             InitializeComponent();
         }
 
-        private void Canvas_MouseMove(object sender, MouseEventArgs e)
+        private void CanvasMouseMove(object sender, MouseEventArgs e)
         {
             if (Mouse.Captured != null)
             {
@@ -99,54 +98,93 @@ namespace WpfBinding
             }
             else
             {
-                HandleCapturing(e.GetPosition(Canvas));
+                HandleHovering(e.GetPosition(Canvas));
             }
 
         }
 
-        private void HandleCapturing(Point eventPosition)
+        private void HandleHovering(Point eventPosition)
         {
             var hitTestResult = VisualTreeHelper.HitTest(Canvas, eventPosition);
             if (hitTestResult == null)
+            {
                 return;
-            Mouse.OverrideCursor = GetProperCursor(hitTestResult.VisualHit is Line);
+            }
+            Mouse.OverrideCursor = GetProperCursor(hitTestResult.VisualHit as Line);
             _oldPosition = eventPosition;
         }
 
-        private Cursor GetProperCursor(bool resizeCursor)
+        private Cursor GetProperCursor(Line element)
         {
-            return resizeCursor ? Cursors.SizeWE : Cursors.Arrow;
+            if (element != null)
+            {
+                var line = element.DataContext as LineBase;
+                if (line != null)
+                {
+                    switch (line.DragType)
+                    {
+                        case DragTypes.Horizontal:
+                            return Cursors.SizeWE;
+                        case DragTypes.Vertical:
+                            return Cursors.SizeNS;
+                        case DragTypes.Both:
+                            return Cursors.SizeAll;
+                    }
+                }
+            }
+
+            return Cursors.Arrow;
         }
 
         private void HandleMoving(Point position)
         {
-            var vector = position - _oldPosition;
-            vector.Y = 0;
-
-            UIElement line = (UIElement) Mouse.Captured;
+            var line = (UIElement)Mouse.Captured;
             var source = line.GetValue(Line.DataContextProperty) as LineBase;
+            if (source == null)
+                return;
+
+            var vector = AdjustVector(position - _oldPosition, source.DragType);
+            vector = _coordinatesHelper.Unscale(vector);
+
             source.From += vector;
             source.To += vector;
 
             _oldPosition = position;
         }
 
+        private static Vector AdjustVector(Vector vector, DragTypes dragType)
+        {
+            if (dragType == DragTypes.Horizontal)
+                return new Vector(vector.X, 0);
+            
+            if (dragType == DragTypes.Vertical)
+                return new Vector(0, vector.Y);
+
+            if (dragType == DragTypes.Both)
+                return vector;
+
+            return new Vector(0, 0);
+        }
+
         private void Highlight(DependencyObject selectedObject, bool highlight)
         {
-            ((Line) selectedObject).StrokeThickness += highlight ? 1 : -1;
             selectedObject.SetValue(Line.StrokeProperty, highlight? Brushes.Yellow : Brushes.Black);
         }
 
-        private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
+        private void CanvasMouseDown(object sender, MouseButtonEventArgs e)
         {
             var hitTestResult = VisualTreeHelper.HitTest(Canvas, e.GetPosition(Canvas));
             if (hitTestResult == null || hitTestResult.VisualHit == null)
                 return;
 
-            if (hitTestResult.VisualHit is Line)
+            var element = (UIElement) hitTestResult.VisualHit;
+
+
+
+            if (element.IsHitTestVisible)
             {
-                Mouse.Capture((IInputElement) hitTestResult.VisualHit, CaptureMode.Element);
-                ((LineBase) hitTestResult.VisualHit.GetValue(Line.DataContextProperty)).Selected = true;
+                Mouse.Capture(element, CaptureMode.Element);
+                SelectElement(element);
             }
             else
             {
@@ -160,7 +198,16 @@ namespace WpfBinding
             
         }
 
-        private void Canvas_MouseUp(object sender, MouseButtonEventArgs e)
+        private void SelectElement(UIElement element)
+        {
+            var line = element.GetValue(Line.DataContextProperty) as LineBase;
+            if (line != null)
+            {
+                line.Selected = true;
+            }
+        }
+
+        private void CanvasMouseUp(object sender, MouseButtonEventArgs e)
         {
             if (Mouse.Captured == null)
                 return;

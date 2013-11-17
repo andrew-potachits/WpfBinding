@@ -39,14 +39,54 @@ namespace WpfBinding
         {
             int oldCount = _rebars.Count;
             _rebars.Clear();
+            _rebars.AddRange(new[] {new LineBase
+                                        {
+                                            From = bounds.TopLeft,
+                                            To = bounds.TopRight
+                                        },new LineBase
+                                        {
+                                            From = bounds.TopRight,
+                                            To = bounds.BottomRight
+                                        }, new LineBase
+                                        {
+                                            From = bounds.BottomRight,
+                                            To = bounds.BottomLeft
+                                        }, new LineBase
+                                        {
+                                            From = bounds.BottomLeft,
+                                            To = bounds.TopLeft
+                                        }});
             _rebars.AddRange(
                 Enumerable
                     .Range(0, count)
                     .Select(i => new LineBase
                                      {
                                          From = new Point(bounds.Left + bounds.Width/count*i, bounds.Top),
-                                         To = new Point(bounds.Left + bounds.Width/count*i, bounds.Bottom)
+                                         To = new Point(bounds.Left + bounds.Width/count*i, bounds.Bottom),
+                                         DragType = DragTypes.Horizontal
                                      }));
+
+            _rebars.AddRange(new []
+                                 {
+                                     new LineBase
+                                         {
+                                             From = new Point(bounds.Left, bounds.Top + 10),
+                                             To = new Point(bounds.Right, bounds.Top + 10),
+                                             DragType = DragTypes.Vertical
+                                         },
+                                     new LineBase
+                                         {
+                                             From = new Point(bounds.Left, bounds.Height/2),
+                                             To = new Point(bounds.Right, bounds.Height/2),
+                                             DragType = DragTypes.Vertical
+                                         },
+                                     new LineBase
+                                         {
+                                             From = new Point(bounds.Left, bounds.Bottom - 10),
+                                             To = new Point(bounds.Right, bounds.Bottom - 10),
+                                             DragType = DragTypes.Vertical
+                                         },
+                                 });
             RaiseCollectionChangedEvent();
             if (oldCount != count)
             {

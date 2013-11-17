@@ -21,7 +21,7 @@ namespace WpfBinding
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return _scaleTransformer.Unstransform((double) value);
+            return _scaleTransformer.Untransform((double) value);
         }
     }
 }

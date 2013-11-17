@@ -64,5 +64,11 @@ namespace WpfBinding.Geomerty
                 _verticalTransformer.Origin = _move.Y = (viewBounds.Height - (drawingBounds.Height *_verticalTransformer.Scale)) / 2;
             }
         }
+
+        public Vector Unscale(Vector vector)
+        {
+            return new Vector(_horizontalTransformer.Unscale(vector.X),
+                              _verticalTransformer.Unscale(vector.Y));
+        }
     }
 }

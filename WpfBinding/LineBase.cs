@@ -8,6 +8,16 @@ namespace WpfBinding
         private Point _from;
         private Point _to;
         private bool _selected;
+        private DragTypes _dragType = DragTypes.None;
+
+        public string GroupName { get; set; }
+
+        public DragTypes DragType
+        {
+            get { return _dragType; }
+            set { _dragType = value; }
+        }
+
         public bool Selected
         {
             get { return _selected; }

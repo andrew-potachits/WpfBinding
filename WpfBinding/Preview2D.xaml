@@ -10,7 +10,7 @@
     <Grid >
         <Canvas Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" 
                 Margin="10"
-                x:Name="Canvas" MouseMove="Canvas_MouseMove" MouseDown="Canvas_MouseDown" MouseUp="Canvas_MouseUp" SizeChanged="CanvasSizeChanged">
+                x:Name="Canvas" MouseMove="CanvasMouseMove" MouseDown="CanvasMouseDown" MouseUp="CanvasMouseUp" SizeChanged="CanvasSizeChanged">
         </Canvas>
     </Grid>
 </UserControl>
