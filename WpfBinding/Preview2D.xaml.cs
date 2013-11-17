@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
@@ -7,6 +8,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using WpfBinding.Geomerty;
 
 namespace WpfBinding
 {
@@ -14,7 +16,7 @@ namespace WpfBinding
     /// Interaction logic for Preview2D.xaml
     /// </summary>
     //[ContentProperty("Data")]
-    public partial class Preview2D : UserControl, IScaleProvider
+    public partial class Preview2D : UserControl
     {
         public IEnumerable<LineDef> Data
         {
@@ -22,20 +24,17 @@ namespace WpfBinding
             set { SetValue(DataProperty, value); }
         }
 
-        private readonly IValueConverter _styleConverter;
-
         // Using a DependencyProperty as the backing store for Data.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty DataProperty =
             DependencyProperty.Register("Data", typeof(IEnumerable<LineDef>), typeof(Preview2D), new PropertyMetadata(default(IEnumerable<LineDef>), OnPropertyChanged));
 
-        //private DependencyObject _selectedObject;
         private Point _oldPosition;
-        private IValueConverter _scaleConverter;
+        private readonly CoordinatesHelper _coordinatesHelper = new CoordinatesHelper();
 
         private static void OnPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            Preview2D target = d as Preview2D;
-            target.UpdateContent();
+            var target = d as Preview2D;
+            if (target != null) target.UpdateContent();
         }
 
         private void UpdateContent()
@@ -43,7 +42,8 @@ namespace WpfBinding
             var collectionChanged = Data as INotifyCollectionChanged;
             if (collectionChanged != null) 
                 collectionChanged.CollectionChanged += ItemsChanged;
-
+            
+            CalculateScalingFactor();
             PopulateChildren();
         }
 
@@ -56,22 +56,25 @@ namespace WpfBinding
                                {
                                    StrokeThickness = 2,
                                    DataContext = lineDef,
+                                   Stroke = Brushes.Black,
+                                   LayoutTransform = _coordinatesHelper.Transform
                                };
-                BindData(line, Line.X1Property, "From.X");
-                BindData(line, Line.Y1Property, "From.Y");
-                BindData(line, Line.X2Property, "To.X");
-                BindData(line, Line.Y2Property, "To.Y");
-                line.Style = Resources[lineDef.Selected ? "Selected" : "Unselected"] as Style;
-                
+                BindData(line, Line.X1Property, "From.X", _coordinatesHelper.HorizontalConverter);
+                BindData(line, Line.Y1Property, "From.Y", _coordinatesHelper.VerticalConverter);
+                BindData(line, Line.X2Property, "To.X", _coordinatesHelper.HorizontalConverter);
+                BindData(line, Line.Y2Property, "To.Y", _coordinatesHelper.VerticalConverter);
+
                 Canvas.Children.Add(line);
             }
         }
 
-        private void BindData(DependencyObject target, DependencyProperty property, string path)
+        private void BindData(DependencyObject target, DependencyProperty property, string path, IValueConverter valueConverter)
         {
-            var binding = new Binding(path);
-            binding.Mode = BindingMode.TwoWay;
-            binding.Converter = _scaleConverter;
+            var binding = new Binding(path)
+                              {
+                                  Mode = BindingMode.TwoWay, 
+                                  //Converter = valueConverter,
+                              };
             BindingOperations.SetBinding(target, property, binding);
         }
 
@@ -83,9 +86,7 @@ namespace WpfBinding
 
         public Preview2D()
         {
-            _styleConverter = new LineStyleConverter(Resources, "Selected", "Unselected");
             InitializeComponent();
-            _scaleConverter = new ScaleConverter(this);
         }
 
         private void Canvas_MouseMove(object sender, MouseEventArgs e)
@@ -130,8 +131,8 @@ namespace WpfBinding
 
         private void Highlight(DependencyObject selectedObject, bool highlight)
         {
-            //((Line) selectedObject).StrokeThickness += highlight ? 1 : -1;
-            //selectedObject.SetValue(Line.StrokeProperty, highlight? Brushes.Yellow : Brushes.Black);
+            ((Line) selectedObject).StrokeThickness += highlight ? 1 : -1;
+            selectedObject.SetValue(Line.StrokeProperty, highlight? Brushes.Yellow : Brushes.Black);
         }
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
@@ -166,5 +167,27 @@ namespace WpfBinding
 
         public double XScale { get; set; }
         public double YScale { get; set; }
+        public double XOrigin { get; set; }
+        public double YOrigin { get; set; }
+
+        private void CanvasSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            CalculateScalingFactor();
+        }
+
+        private void CalculateScalingFactor()
+        {
+            if (Data == null)
+                return;
+
+            var bounds = new Rect(0,0,0,0);
+            foreach (var lineDef in Data)
+            {
+                bounds.Union(new Rect(lineDef.From, lineDef.To));
+            }
+            Rect viewBounds = new Rect(0, 0, ActualWidth, ActualHeight);
+
+            _coordinatesHelper.RecalculateScale(viewBounds, bounds);
+        }
     }
 }
