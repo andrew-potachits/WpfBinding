@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
@@ -18,15 +17,15 @@ namespace WpfBinding
     //[ContentProperty("Data")]
     public partial class Preview2D : UserControl
     {
-        public IEnumerable<LineDef> Data
+        public IEnumerable<LineBase> Data
         {
-            get { return (IEnumerable<LineDef>)GetValue(DataProperty); }
+            get { return (IEnumerable<LineBase>)GetValue(DataProperty); }
             set { SetValue(DataProperty, value); }
         }
 
         // Using a DependencyProperty as the backing store for Data.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty DataProperty =
-            DependencyProperty.Register("Data", typeof(IEnumerable<LineDef>), typeof(Preview2D), new PropertyMetadata(default(IEnumerable<LineDef>), OnPropertyChanged));
+            DependencyProperty.Register("Data", typeof(IEnumerable<LineBase>), typeof(Preview2D), new PropertyMetadata(default(IEnumerable<LineBase>), OnPropertyChanged));
 
         private Point _oldPosition;
         private readonly CoordinatesHelper _coordinatesHelper = new CoordinatesHelper();
@@ -50,6 +49,9 @@ namespace WpfBinding
         private void PopulateChildren()
         {
             Canvas.Children.Clear();
+            if (Data == null)
+                return;
+
             foreach (var lineDef in Data)
             {
                 var line = new Line
@@ -57,7 +59,7 @@ namespace WpfBinding
                                    StrokeThickness = 2,
                                    DataContext = lineDef,
                                    Stroke = Brushes.Black,
-                                   LayoutTransform = _coordinatesHelper.Transform
+                                   //LayoutTransform = _coordinatesHelper.Transform
                                };
                 BindData(line, Line.X1Property, "From.X", _coordinatesHelper.HorizontalConverter);
                 BindData(line, Line.Y1Property, "From.Y", _coordinatesHelper.VerticalConverter);
@@ -73,7 +75,7 @@ namespace WpfBinding
             var binding = new Binding(path)
                               {
                                   Mode = BindingMode.TwoWay, 
-                                  //Converter = valueConverter,
+                                  Converter = valueConverter,
                               };
             BindingOperations.SetBinding(target, property, binding);
         }
@@ -122,7 +124,7 @@ namespace WpfBinding
             vector.Y = 0;
 
             UIElement line = (UIElement) Mouse.Captured;
-            var source = line.GetValue(Line.DataContextProperty) as LineDef;
+            var source = line.GetValue(Line.DataContextProperty) as LineBase;
             source.From += vector;
             source.To += vector;
 
@@ -144,7 +146,7 @@ namespace WpfBinding
             if (hitTestResult.VisualHit is Line)
             {
                 Mouse.Capture((IInputElement) hitTestResult.VisualHit, CaptureMode.Element);
-                ((LineDef) hitTestResult.VisualHit.GetValue(Line.DataContextProperty)).Selected = true;
+                ((LineBase) hitTestResult.VisualHit.GetValue(Line.DataContextProperty)).Selected = true;
             }
             else
             {
@@ -165,14 +167,10 @@ namespace WpfBinding
             Mouse.Capture(null);
         }
 
-        public double XScale { get; set; }
-        public double YScale { get; set; }
-        public double XOrigin { get; set; }
-        public double YOrigin { get; set; }
-
         private void CanvasSizeChanged(object sender, SizeChangedEventArgs e)
         {
             CalculateScalingFactor();
+            PopulateChildren();
         }
 
         private void CalculateScalingFactor()
@@ -180,12 +178,14 @@ namespace WpfBinding
             if (Data == null)
                 return;
 
-            var bounds = new Rect(0,0,0,0);
+            var bounds = new Rect();
             foreach (var lineDef in Data)
             {
                 bounds.Union(new Rect(lineDef.From, lineDef.To));
             }
-            Rect viewBounds = new Rect(0, 0, ActualWidth, ActualHeight);
+            //TODO: inrtoduce property for bounds 
+            Rect viewBounds = new Rect(0, 0, Canvas.ActualWidth, Canvas.ActualHeight);
+
 
             _coordinatesHelper.RecalculateScale(viewBounds, bounds);
         }

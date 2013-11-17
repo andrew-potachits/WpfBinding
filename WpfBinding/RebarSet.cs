@@ -7,11 +7,11 @@ using System.Windows;
 
 namespace WpfBinding
 {
-    public class RebarSet : IEnumerable<LineDef>, INotifyCollectionChanged, INotifyPropertyChanged
+    public class RebarSet : IEnumerable<LineBase>, INotifyCollectionChanged, INotifyPropertyChanged
     {
-        private readonly List<LineDef> _rebars = new List<LineDef>();
+        private readonly List<LineBase> _rebars = new List<LineBase>();
         public int Count { get { return _rebars.Count; } }
-        public IEnumerator<LineDef> GetEnumerator()
+        public IEnumerator<LineBase> GetEnumerator()
         {
             return _rebars.GetEnumerator();
         }
@@ -38,11 +38,11 @@ namespace WpfBinding
         public void Generate(Rect bounds, int count)
         {
             int oldCount = _rebars.Count;
-            _rebars.Clear();            
+            _rebars.Clear();
             _rebars.AddRange(
                 Enumerable
                     .Range(0, count)
-                    .Select(i => new LineDef
+                    .Select(i => new LineBase
                                      {
                                          From = new Point(bounds.Left + bounds.Width/count*i, bounds.Top),
                                          To = new Point(bounds.Left + bounds.Width/count*i, bounds.Bottom)

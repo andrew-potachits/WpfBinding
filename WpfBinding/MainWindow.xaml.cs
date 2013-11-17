@@ -10,7 +10,7 @@ namespace WpfBinding
     {
         private readonly RebarSet _rebarSet = new RebarSet();
         public RebarSet Model { get { return _rebarSet; } }
-        private Rect _bounds = new Rect(10, 0, 300, 200);
+        private Rect _bounds = new Rect(10, 0, 300, 300);
         public MainWindow()
         {
             InitializeComponent();

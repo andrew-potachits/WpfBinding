@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace WpfBinding
 {
-    public class LineDef : INotifyPropertyChanged
+    public class LineBase : INotifyPropertyChanged
     {
         private Point _from;
         private Point _to;
