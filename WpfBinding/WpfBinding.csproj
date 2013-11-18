@@ -54,10 +54,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="DemoElementOptionsProvider.cs" />
     <Compile Include="DragTypes.cs" />
+    <Compile Include="ElementOptions.cs" />
     <Compile Include="Geomerty\CoordinatesHelper.cs" />
     <Compile Include="Geomerty\IScaleTransformer.cs" />
     <Compile Include="Geomerty\ScaleTransformer.cs" />
+    <Compile Include="IElementOptionsProvider.cs" />
     <Compile Include="RebarSet.cs" />
     <Compile Include="CoordinateConverter.cs" />
     <Page Include="MainWindow.xaml">

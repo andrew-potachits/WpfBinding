@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
@@ -53,7 +54,9 @@ namespace WpfBinding
         public static readonly DependencyProperty SelectedLineStyleProperty =
             DependencyProperty.Register("SelectedLineStyle", typeof(Style), typeof(Preview2D), new PropertyMetadata(null));
 
-        
+        private IElementOptionsProvider _elementOptionsProvider = new DemoElementOptionsProvider();
+
+
         private static void OnPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var target = d as Preview2D;
@@ -82,7 +85,6 @@ namespace WpfBinding
                                {
                                    DataContext = lineDef,
                                    Style = LineStyle,
-                                   IsHitTestVisible = (lineDef.DragType != DragTypes.None),
                                };
                 BindData(line, Line.X1Property, "From.X", _coordinatesHelper.HorizontalConverter);
                 BindData(line, Line.Y1Property, "From.Y", _coordinatesHelper.VerticalConverter);
@@ -146,7 +148,7 @@ namespace WpfBinding
                 var line = element.DataContext as LineBase;
                 if (line != null)
                 {
-                    switch (line.DragType)
+                    switch (_elementOptionsProvider.GetElementOptions(line).DragType)
                     {
                         case DragTypes.Horizontal:
                             return Cursors.SizeWE;
@@ -168,8 +170,7 @@ namespace WpfBinding
             if (source == null)
                 return;
 
-            var vector = AdjustVector(position - _oldPosition, source.DragType);
-            vector = _coordinatesHelper.Unscale(vector);
+            var vector = AdjustVector(position - _oldPosition, source);
 
             source.From += vector;
             source.To += vector;
@@ -177,49 +178,70 @@ namespace WpfBinding
             _oldPosition = position;
         }
 
-        private static Vector AdjustVector(Vector vector, DragTypes dragType)
+        private Vector AdjustVector(Vector vector, LineBase element)
         {
-            if (dragType == DragTypes.Horizontal)
-                return new Vector(vector.X, 0);
-            
-            if (dragType == DragTypes.Vertical)
-                return new Vector(0, vector.Y);
+            ElementOptions options = _elementOptionsProvider.GetElementOptions(element);
 
-            if (dragType == DragTypes.Both)
-                return vector;
+            Vector unscaled = _coordinatesHelper.Unscale(vector);
+
+            if (options.DragType == DragTypes.Horizontal)
+                return new Vector(SnapToGrid(unscaled.X, options.SnapOptions.X), 0);
+
+            if (options.DragType == DragTypes.Vertical)
+                return new Vector(0, SnapToGrid(unscaled.Y, options.SnapOptions.Y));
+
+            if (options.DragType == DragTypes.Both)
+                return new Vector(SnapToGrid(unscaled.X, options.SnapOptions.X),
+                                  SnapToGrid(unscaled.Y, options.SnapOptions.Y));
 
             return new Vector(0, 0);
         }
 
+        private double SnapToGrid(double value, double gridStep)
+        {
+            return value;
+            return Math.Round(value / gridStep, MidpointRounding.AwayFromZero) * gridStep;
+        }
+
+
         private void CanvasMouseDown(object sender, MouseButtonEventArgs e)
         {
-            var hitTestResult = VisualTreeHelper.HitTest(Canvas, e.GetPosition(Canvas));
+            var position = e.GetPosition(Canvas);
+            var hitTestResult = VisualTreeHelper.HitTest(Canvas, position);
             if (hitTestResult == null || hitTestResult.VisualHit == null)
                 return;
 
             var element = (UIElement) hitTestResult.VisualHit;
 
 
-
+            // BUG: HitTest may return elements that have IsHitTestVisible = false
             if (element.IsHitTestVisible)
             {
                 Mouse.Capture(element, CaptureMode.Element);
-                SelectElement(element);
+                SelectElement(element, e.LeftButton == MouseButtonState.Pressed);
+                _oldPosition = position;
             }
             else
             {
-                foreach (var selectedLine in Data.AsEnumerable().Where(l => l.Selected))
-                {
-                    selectedLine.Selected = false;
-                }
-                
+                UnselectElements();
             }
             
             
         }
 
-        private void SelectElement(UIElement element)
+        private void UnselectElements()
         {
+            foreach (var selectedLine in Data.AsEnumerable().Where(l => l.Selected))
+            {
+                selectedLine.Selected = false;
+            }
+        }
+
+        private void SelectElement(UIElement element, bool addSelection)
+        {
+            if (!addSelection)
+                UnselectElements();
+
             var line = element.GetValue(Line.DataContextProperty) as LineBase;
             if (line != null)
             {

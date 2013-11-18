@@ -10,7 +10,7 @@ namespace WpfBinding
     public class RebarSet : IEnumerable<LineBase>, INotifyCollectionChanged, INotifyPropertyChanged
     {
         private readonly List<LineBase> _rebars = new List<LineBase>();
-        public int Count { get { return _rebars.Count; } }
+        public int Count { get { return _rebars.Count - 4 - 3; } }
         public IEnumerator<LineBase> GetEnumerator()
         {
             return _rebars.GetEnumerator();
@@ -37,24 +37,28 @@ namespace WpfBinding
 
         public void Generate(Rect bounds, int count)
         {
-            int oldCount = _rebars.Count;
+            int oldCount = _rebars.Count - 4 - 3;
             _rebars.Clear();
             _rebars.AddRange(new[] {new LineBase
                                         {
                                             From = bounds.TopLeft,
-                                            To = bounds.TopRight
+                                            To = bounds.TopRight,
+                                            Id = "BOX.0",
                                         },new LineBase
                                         {
                                             From = bounds.TopRight,
-                                            To = bounds.BottomRight
+                                            To = bounds.BottomRight,
+                                            Id = "BOX.1",
                                         }, new LineBase
                                         {
                                             From = bounds.BottomRight,
-                                            To = bounds.BottomLeft
+                                            To = bounds.BottomLeft,
+                                            Id = "BOX.2",
                                         }, new LineBase
                                         {
                                             From = bounds.BottomLeft,
-                                            To = bounds.TopLeft
+                                            To = bounds.TopLeft,
+                                            Id = "BOX.3",
                                         }});
             _rebars.AddRange(
                 Enumerable
@@ -63,7 +67,7 @@ namespace WpfBinding
                                      {
                                          From = new Point(bounds.Left + bounds.Width/count*i, bounds.Top),
                                          To = new Point(bounds.Left + bounds.Width/count*i, bounds.Bottom),
-                                         DragType = DragTypes.Horizontal
+                                         Id = string.Format("REBAR.VERTICAL.{0}", i),
                                      }));
 
             _rebars.AddRange(new []
@@ -72,20 +76,20 @@ namespace WpfBinding
                                          {
                                              From = new Point(bounds.Left, bounds.Top + 10),
                                              To = new Point(bounds.Right, bounds.Top + 10),
-                                             DragType = DragTypes.Vertical
+                                             Id = "REBAR.HORIZONTAL.0",
                                          },
                                      new LineBase
                                          {
                                              From = new Point(bounds.Left, bounds.Height/2),
                                              To = new Point(bounds.Right, bounds.Height/2),
-                                             DragType = DragTypes.Vertical
+                                             Id = "REBAR.HORIZONTAL.1",
                                          },
                                      new LineBase
                                          {
                                              From = new Point(bounds.Left, bounds.Bottom - 10),
                                              To = new Point(bounds.Right, bounds.Bottom - 10),
-                                             DragType = DragTypes.Vertical
-                                         },
+                                             Id = "REBAR.HORIZONTAL.2",
+                                         }
                                  });
             RaiseCollectionChangedEvent();
             if (oldCount != count)
