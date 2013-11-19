@@ -8,7 +8,13 @@ namespace WpfBinding
         {
             var options = new ElementOptions
                               {
-                                  SnapOptions = new Vector(1, 1)
+                                  SnapOptions = new SnapOptions
+                                                    {
+                                                        HorizontalSnap = true,
+                                                        HorizontalGridStep = 2.0,
+                                                        VerticalSnap = true,
+                                                        VerticalGridStep = 2.0
+                                                    }
                               };
 
             if (element.Id.StartsWith("BOX"))

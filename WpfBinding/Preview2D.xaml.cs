@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
@@ -55,6 +54,8 @@ namespace WpfBinding
             DependencyProperty.Register("SelectedLineStyle", typeof(Style), typeof(Preview2D), new PropertyMetadata(null));
 
         private IElementOptionsProvider _elementOptionsProvider = new DemoElementOptionsProvider();
+        private Vector _cumulativeDragging;
+        private Vector _snapToGridNode;
 
 
         private static void OnPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -132,13 +133,11 @@ namespace WpfBinding
 
         private void HandleHovering(Point eventPosition)
         {
-            var hitTestResult = VisualTreeHelper.HitTest(Canvas, eventPosition);
-            if (hitTestResult == null)
-            {
+            var element = HitElement(eventPosition);
+            if (element == null)
                 return;
-            }
-            Mouse.OverrideCursor = GetProperCursor(hitTestResult.VisualHit as Line);
-            _oldPosition = eventPosition;
+            
+            Mouse.OverrideCursor = GetProperCursor(element as Line);
         }
 
         private Cursor GetProperCursor(Line element)
@@ -170,56 +169,45 @@ namespace WpfBinding
             if (source == null)
                 return;
 
-            var vector = AdjustVector(position - _oldPosition, source);
+            //TODO: move this to separate class for handling drag vector calculation
+            //  current movement (step)
+            var movement = position - _oldPosition;
+            //  adjusted gradding vector
+            var dragging = AdjustVector(movement, source);
 
-            source.From += vector;
-            source.To += vector;
-
+            if (dragging != _snapToGridNode)
+            {
+                var vector = dragging - _snapToGridNode;
+                source.From += vector;
+                source.To += vector;
+                _snapToGridNode = dragging;
+            }
             _oldPosition = position;
+            _cumulativeDragging += movement;
         }
 
         private Vector AdjustVector(Vector vector, LineBase element)
         {
             ElementOptions options = _elementOptionsProvider.GetElementOptions(element);
 
-            Vector unscaled = _coordinatesHelper.Unscale(vector);
+            var totalMove = _coordinatesHelper.Unscale(_cumulativeDragging) + _coordinatesHelper.Unscale(vector);
 
-            if (options.DragType == DragTypes.Horizontal)
-                return new Vector(SnapToGrid(unscaled.X, options.SnapOptions.X), 0);
-
-            if (options.DragType == DragTypes.Vertical)
-                return new Vector(0, SnapToGrid(unscaled.Y, options.SnapOptions.Y));
-
-            if (options.DragType == DragTypes.Both)
-                return new Vector(SnapToGrid(unscaled.X, options.SnapOptions.X),
-                                  SnapToGrid(unscaled.Y, options.SnapOptions.Y));
-
-            return new Vector(0, 0);
-        }
-
-        private double SnapToGrid(double value, double gridStep)
-        {
-            return value;
-            return Math.Round(value / gridStep, MidpointRounding.AwayFromZero) * gridStep;
+            //  snap to nearest grid line
+            return DraggingHelper.CalculateNewSnapPosition(totalMove, options);
         }
 
 
         private void CanvasMouseDown(object sender, MouseButtonEventArgs e)
         {
             var position = e.GetPosition(Canvas);
-            var hitTestResult = VisualTreeHelper.HitTest(Canvas, position);
-            if (hitTestResult == null || hitTestResult.VisualHit == null)
+            var element = HitElement(position);
+            if (element == null) 
                 return;
-
-            var element = (UIElement) hitTestResult.VisualHit;
-
 
             // BUG: HitTest may return elements that have IsHitTestVisible = false
             if (element.IsHitTestVisible)
             {
-                Mouse.Capture(element, CaptureMode.Element);
-                SelectElement(element, e.LeftButton == MouseButtonState.Pressed);
-                _oldPosition = position;
+                BeginDragging(position, element, e);
             }
             else
             {
@@ -227,6 +215,26 @@ namespace WpfBinding
             }
             
             
+        }
+
+        private UIElement HitElement(Point position)
+        {
+            var hitTestResult = VisualTreeHelper.HitTest(Canvas, position);
+            if (hitTestResult == null || hitTestResult.VisualHit == null)
+                return null;
+
+            var element = (UIElement) hitTestResult.VisualHit;
+            return element;
+        }
+
+        private void BeginDragging(Point position, UIElement element, MouseButtonEventArgs e)
+        {
+            Mouse.Capture(element, CaptureMode.Element);
+            SelectElement(element, e.LeftButton == MouseButtonState.Pressed);
+            _oldPosition = position;
+            // reset distance
+            _cumulativeDragging = new Vector(0, 0);
+            _snapToGridNode = new Vector(0, 0);
         }
 
         private void UnselectElements()
@@ -254,6 +262,8 @@ namespace WpfBinding
             if (Mouse.Captured == null)
                 return;
             Mouse.Capture(null);
+            _snapToGridNode = _cumulativeDragging = new Vector(0, 0);
+            
         }
 
         private void CanvasSizeChanged(object sender, SizeChangedEventArgs e)

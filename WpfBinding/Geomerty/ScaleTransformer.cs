@@ -5,14 +5,14 @@ namespace WpfBinding.Geomerty
         public ScaleTransformer(double origin, double scale)
         {
             Origin = origin;
-            Scale = scale;
+            ScaleValue = scale;
         }
 
-        public double Scale { get; set; }
+        public double ScaleValue { get; set; }
         public double Origin { get; set; }
         public double Transform(double value)
         {
-            return Origin + value*Scale;
+            return Origin + Scale(value);
         }
 
         public double Untransform(double value)
@@ -22,7 +22,12 @@ namespace WpfBinding.Geomerty
 
         public double Unscale(double value)
         {
-            return value/Scale;
+            return value/ScaleValue;
+        }
+
+        public double Scale(double value)
+        {
+            return value*ScaleValue;
         }
     }
 }

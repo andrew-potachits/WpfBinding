@@ -46,22 +46,22 @@ namespace WpfBinding.Geomerty
         {
             double scaleX = viewBounds.Width/drawingBounds.Width;
             double scaleY = viewBounds.Height/drawingBounds.Height;
-            _verticalTransformer.Scale = _horizontalTransformer.Scale = Math.Min(scaleX, scaleY);
+            _verticalTransformer.ScaleValue = _horizontalTransformer.ScaleValue = Math.Min(scaleX, scaleY);
 
-            _scale.ScaleX = _horizontalTransformer.Scale;
-            _scale.ScaleY = _verticalTransformer.Scale;
+            _scale.ScaleX = _horizontalTransformer.ScaleValue;
+            _scale.ScaleY = _verticalTransformer.ScaleValue;
             _scale.CenterX = drawingBounds.Left;
             _scale.CenterY = drawingBounds.Top;
 
             if (scaleX > scaleY)
             {
-                _horizontalTransformer.Origin = _move.X = (viewBounds.Width - (drawingBounds.Width * _verticalTransformer.Scale)) / 2;
+                _horizontalTransformer.Origin = _move.X = (viewBounds.Width - (drawingBounds.Width * _verticalTransformer.ScaleValue)) / 2;
                 _verticalTransformer.Origin = _move.Y = 0;
             }
             else
             {
                 _horizontalTransformer.Origin = _move.X = 0;
-                _verticalTransformer.Origin = _move.Y = (viewBounds.Height - (drawingBounds.Height *_verticalTransformer.Scale)) / 2;
+                _verticalTransformer.Origin = _move.Y = (viewBounds.Height - (drawingBounds.Height *_verticalTransformer.ScaleValue)) / 2;
             }
         }
 
@@ -69,6 +69,12 @@ namespace WpfBinding.Geomerty
         {
             return new Vector(_horizontalTransformer.Unscale(vector.X),
                               _verticalTransformer.Unscale(vector.Y));
+        }
+
+        public Vector Scale(Vector vector)
+        {
+            return new Vector(_horizontalTransformer.Scale(vector.X),
+                              _verticalTransformer.Scale(vector.Y));
         }
     }
 }

@@ -55,6 +55,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="DemoElementOptionsProvider.cs" />
+    <Compile Include="DraggingHelper.cs" />
     <Compile Include="DragTypes.cs" />
     <Compile Include="ElementOptions.cs" />
     <Compile Include="Geomerty\CoordinatesHelper.cs" />
@@ -63,6 +64,7 @@
     <Compile Include="IElementOptionsProvider.cs" />
     <Compile Include="RebarSet.cs" />
     <Compile Include="CoordinateConverter.cs" />
+    <Compile Include="SnapOptions.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
